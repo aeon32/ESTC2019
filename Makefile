@@ -9,7 +9,7 @@ LABS_DIR = $(BUILD_ROOT)/projects
 
 all: labs
 
-labs: lab1 lab2
+labs: lab1 lab2 lab2_it
 
 spl:
 	make -C $(SPL_PATH)
@@ -23,8 +23,12 @@ lab1: spl common
 lab2: spl common
 	make -C $(LABS_DIR)/lab2
 
+lab2_it: spl common
+	make -C $(LABS_DIR)/lab2_it
+
 clean:
 	make -C $(SPL_PATH) clean
 	make -C $(COMMON_PATH) clean
 	make -C $(LABS_DIR)/lab1 clean
 	make -C $(LABS_DIR)/lab2 clean
+	make -C $(LABS_DIR)/lab2_it clean
