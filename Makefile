@@ -18,9 +18,9 @@ common:
 	make -C $(COMMON_PATH)
 
 lab1: spl common
-	make -C $(LABS_DIR)/led_test
+	make -C $(LABS_DIR)/lab1
 
 clean:
 	make -C $(SPL_PATH) clean
 	make -C $(COMMON_PATH) clean
-	make -C $(LABS_DIR)/led_test clean
+	make -C $(LABS_DIR)/lab1 clean
