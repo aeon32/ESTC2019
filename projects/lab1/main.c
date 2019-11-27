@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#define SWITCH_DELAY 50000
+#define SWITCH_DELAY 80000
 
 #define SWITCH_COUNTER_DELAY 500
 
@@ -214,7 +214,7 @@ int main(void)
 
 	/* Turn all the leds off */
 
-	GPIO_ResetBits(LED_PORT, RED_LED_GPIO | GREEN_LED_GPIO | BLUE_LED_GPIO);
+	GPIO_SetBits(LED_PORT, RED_LED_GPIO | GREEN_LED_GPIO | BLUE_LED_GPIO);
 	ButtonState buttonState =
 	{ 0 };
 
@@ -225,7 +225,7 @@ int main(void)
 
 		int i;
 		/* Switch the LED on */
-		GPIO_SetBits(LED_PORT, LEDS[current_led]);
+		GPIO_ResetBits(LED_PORT, LEDS[current_led]);
 
 		for (i = 0; i < SWITCH_DELAY; i++)
 		{
@@ -240,7 +240,7 @@ int main(void)
 		};
 
 		/* Switch the LED off */
-		GPIO_ResetBits(LED_PORT, LEDS[current_led]);
+		GPIO_SetBits(LED_PORT, LEDS[current_led]);
 
 		current_led += direction;
 		if (current_led == LEDS_SIZE)
