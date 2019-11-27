@@ -133,7 +133,7 @@ void setupTimer()
 {
 	TIM_TimeBaseInitTypeDef tim_struct;
 	RCC_APB1PeriphClockCmd(TIMER_PERIPH, ENABLE);
-	tim_struct.TIM_Period = 60000000;
+	tim_struct.TIM_Period = 30000000;
 	tim_struct.TIM_Prescaler = 0;
 	tim_struct.TIM_ClockDivision = 0;
 	tim_struct.TIM_CounterMode = TIM_CounterMode_Up;
@@ -189,9 +189,9 @@ int main(void)
 
 	sysclkReset();
 	//AHB clock = SYSCLK
-	RCC_HCLKConfig(RCC_SYSCLK_Div1);
+	//RCC_HCLKConfig(RCC_SYSCLK_Div1);
 	//APB1 clock = HCLK
-	RCC_PCLK1Config(RCC_HCLK_Div1);
+	//RCC_PCLK1Config(RCC_HCLK_Div1);
 
 	setupGPIO();
 	setupTimer();
