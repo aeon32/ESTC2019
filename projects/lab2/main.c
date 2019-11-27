@@ -8,15 +8,15 @@
 #define SWITCH_COUNTER_DELAY 500
 
 #define BUTTON_PIN GPIO_Pin_0
-#define BUTTON_PORT GPIOA
-#define BUTTON_PORT_PERIPH RCC_AHB1Periph_GPIOA
+#define BUTTON_PORT GPIOE
+#define BUTTON_PORT_PERIPH RCC_AHB1Periph_GPIOE
 
-#define LED_PORT GPIOD
-#define LED_PORT_PERIPH RCC_AHB1Periph_GPIOD
+#define LED_PORT GPIOA
+#define LED_PORT_PERIPH RCC_AHB1Periph_GPIOA
 
-#define RED_LED_GPIO GPIO_Pin_13
-#define GREEN_LED_GPIO GPIO_Pin_14
-#define BLUE_LED_GPIO GPIO_Pin_15
+#define RED_LED_GPIO GPIO_Pin_8
+#define GREEN_LED_GPIO GPIO_Pin_9
+#define BLUE_LED_GPIO GPIO_Pin_10
 
 #define TIMER TIM2
 #define TIMER_PERIPH RCC_APB1Periph_TIM2
@@ -238,14 +238,14 @@ int main(void)
 		if (timerCounter < oldTimerCounter)  //overflow detected
 		{
 			/* Switch the LED off */
-			GPIO_ResetBits(LED_PORT, LEDS[current_led]);
+			GPIO_SetBits(LED_PORT, LEDS[current_led]);
 
 			current_led += direction;
 			if (current_led == LEDS_SIZE)
 				current_led = 0;
 			if (current_led < 0)
 				current_led = LEDS_SIZE - 1;
-			GPIO_SetBits(LED_PORT, LEDS[current_led]);
+			GPIO_ResetBits(LED_PORT, LEDS[current_led]);
 
 		};
 		oldTimerCounter = timerCounter;
