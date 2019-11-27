@@ -133,8 +133,8 @@ void setupTimer()
 {
 	TIM_TimeBaseInitTypeDef tim_struct;
 	RCC_APB1PeriphClockCmd(TIMER_PERIPH, ENABLE);
-	tim_struct.TIM_Period = 30000000;
-	tim_struct.TIM_Prescaler = 0;
+	tim_struct.TIM_Period = 999;       //period = 1000
+	tim_struct.TIM_Prescaler = 29999;  //presc = 30000
 	tim_struct.TIM_ClockDivision = 0;
 	tim_struct.TIM_CounterMode = TIM_CounterMode_Up;
 	TIM_TimeBaseInit(TIMER, &tim_struct);

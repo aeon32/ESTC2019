@@ -151,8 +151,8 @@ void setupTimer()
 {
 	TIM_TimeBaseInitTypeDef tim_struct;
 	RCC_APB1PeriphClockCmd(TIMER_PERIPH, ENABLE);
-	tim_struct.TIM_Period = 60000000;
-	tim_struct.TIM_Prescaler = 0;
+	tim_struct.TIM_Period = 999;       //period = 1000
+	tim_struct.TIM_Prescaler = 29999;  //presc = 30000
 	tim_struct.TIM_ClockDivision = 0;
 	tim_struct.TIM_CounterMode = TIM_CounterMode_Up;
 	TIM_TimeBaseInit(TIMER, &tim_struct);
@@ -165,49 +165,6 @@ void setupTimer()
 	nvic_struct.NVIC_IRQChannelSubPriority = 1;
 	nvic_struct.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_Init(&nvic_struct);
-}
-;
-
-typedef struct _ButtonState
-{
-	uint32_t switch_counter;
-	uint8_t switched_on;
-	uint8_t triggered;
-
-} ButtonState;
-
-void processButtonState(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin,
-		ButtonState *buttonState)
-{
-	//we use counter to avoid contact chatter
-	int state = GPIO_ReadInputDataBit(GPIOx, GPIO_Pin);
-	if (state == 0)
-	{
-		buttonState->switch_counter++;
-		if (buttonState->switch_counter > SWITCH_COUNTER_DELAY)
-			buttonState->switch_counter = SWITCH_COUNTER_DELAY;
-	}
-	else
-	{
-		if (buttonState->switch_counter > 0)
-			buttonState->switch_counter--;
-	};
-
-	buttonState->triggered = 0;
-	if (!buttonState->switched_on
-			&& buttonState->switch_counter == SWITCH_COUNTER_DELAY)
-	{
-		buttonState->switched_on = 1;
-		buttonState->triggered = 1;
-
-	}
-	else if (buttonState->switched_on && buttonState->switch_counter == 0)
-	{
-		buttonState->switched_on = 0;
-		buttonState->triggered = 1;
-
-	};
-
 }
 ;
 
@@ -251,7 +208,6 @@ void ledswitcher_init(LedSwitcher *switcher)
 }
 
 LedSwitcher ledSwitcher;
-ButtonState buttonState = { 0 };
 
 
 void TIM2_IRQHandler(void)
@@ -284,10 +240,6 @@ int main(void)
 {
 
 	sysclkReset();
-	//AHB clock = SYSCLK
-	RCC_HCLKConfig(RCC_SYSCLK_Div1);
-	//APB1 clock = HCLK
-	RCC_PCLK1Config(RCC_HCLK_Div1);
 
 	ledswitcher_init(&ledSwitcher);
 
