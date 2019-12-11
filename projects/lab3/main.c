@@ -156,7 +156,9 @@ void setupTimer()
 	TIM_TimeBaseInitTypeDef tim_struct;
 
 	tim_struct.TIM_Period = TIMER_APR ;
-	tim_struct.TIM_Prescaler = 2999;
+	//tim_struct.TIM_Prescaler = 2999;  //20hz
+	//tim_struct.TIM_Prescaler = 1199;  //50hz
+	tim_struct.TIM_Prescaler = 599;  //10hz
 	tim_struct.TIM_CounterMode = TIM_CounterMode_Up;
 
     tim_struct.TIM_ClockDivision     = TIM_CKD_DIV1;
@@ -171,7 +173,7 @@ void setupPWM()
     TIM_OCStructInit(&tim_oc_init);
 
     tim_oc_init.TIM_OCMode      = TIM_OCMode_PWM1;
-    tim_oc_init.TIM_Pulse       = 500;
+    tim_oc_init.TIM_Pulse       = 0;
     tim_oc_init.TIM_OutputState = TIM_OutputState_Enable;
     tim_oc_init.TIM_OCPolarity  = TIM_OCPolarity_Low;
 
@@ -268,9 +270,10 @@ int main(void)
 	{
 		PWM_VALUES[i] = i* (TIMER_APR / BRIGHT_STEPS);
 	};
+    int8_t current_brights[] = {0, 0, 0};
 
 	int8_t current_led = 0;
-	int8_t current_bright = 0;
+
 
 	while (1)
 	{
@@ -282,20 +285,20 @@ int main(void)
 		processButtonState(BUTTON_PORT, SWITCH_BUTTON_PIN, &ledButtonState);
 		if (brightnessButtonState.triggered && brightnessButtonState.switched_on)
 		{
-			current_bright++;
-			if (current_bright == BRIGHT_STEPS)
-				current_bright = 0;
-			LEDS_BRIGHTNESS_FUNCS[current_led](TIMER, PWM_VALUES[current_bright] );
+			current_brights[current_led]++;
+			if (current_brights[current_led] == BRIGHT_STEPS)
+				current_brights[current_led] = 0;
+			LEDS_BRIGHTNESS_FUNCS[current_led](TIMER, PWM_VALUES[current_brights[current_led]] );
 
 
 		};
 		if (ledButtonState.triggered && ledButtonState.switched_on)
 		{
-			LEDS_BRIGHTNESS_FUNCS[current_led](TIMER, 0 );
+			//LEDS_BRIGHTNESS_FUNCS[current_led](TIMER, 0 );
 			current_led++;
 			if (current_led == LEDS_BRIGHTNESS_FUNCS_SIZE)
 				current_led= 0;
-			LEDS_BRIGHTNESS_FUNCS[current_led](TIMER, PWM_VALUES[current_bright] );
+			LEDS_BRIGHTNESS_FUNCS[current_led](TIMER, PWM_VALUES[current_brights[current_led]] );
 
 
 		};
