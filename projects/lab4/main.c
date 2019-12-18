@@ -4,7 +4,11 @@
 #include <stm32f4xx_tim.h>
 
 #include <eom.h>
-#include <eom_clkreset.h>
+#include <eom_antichatter.h>
+#include <eom_softwaretimer.h>
+#include <eom_leddriver.h>
+#include <eom_monotonic_time.h>
+
 
 #define SYSCLK_FREQ 60
 
@@ -18,23 +22,17 @@
 #define BUTTON_PORT_PERIPH RCC_AHB1Periph_GPIOE
 
 #define LED_PORT GPIOA
-#define LED_PORT_PERIPH RCC_AHB1Periph_GPIOA
-
 #define RED_LED_GPIO GPIO_Pin_8
 #define GREEN_LED_GPIO GPIO_Pin_9
 #define BLUE_LED_GPIO GPIO_Pin_10
 
-#define RED_LED_AF_SOURCE GPIO_PinSource8
-#define GREEN_LED_AF_SOURCE GPIO_PinSource9
-#define BLUE_LED_AF_SOURCE GPIO_PinSource10
 
+#define LED_PORT_AUX GPIOD
+#define RED_PIN_AUX  GPIO_Pin_13
+#define GREEN_PIN_AUX GPIO_Pin_14
+#define BLUE_PIN_AUX GPIO_Pin_15
 
-#define TIMER TIM1
-#define TIMER_PERIPH RCC_APB2Periph_TIM1
-
-#define TIMER_PERIOD 60000000
-
-#define TIMER_APR 999
+#define MAX_BRIGHTNESS 255
 
 #define BRIGHT_STEPS 6
 
@@ -43,24 +41,8 @@
 
 void setupGPIO()
 {
-	GPIO_InitTypeDef GPIO_InitStructure =
+   GPIO_InitTypeDef GPIO_InitStructure =
 	{ 0 };
-
-	/* Enable peripheral clock for LEDs port */
-	RCC_AHB1PeriphClockCmd(LED_PORT_PERIPH, ENABLE);
-
-    GPIO_PinAFConfig(LED_PORT, RED_LED_AF_SOURCE , GPIO_AF_TIM1);
-    GPIO_PinAFConfig(LED_PORT, GREEN_LED_AF_SOURCE, GPIO_AF_TIM1);
-    GPIO_PinAFConfig(LED_PORT, BLUE_LED_AF_SOURCE, GPIO_AF_TIM1);
-
-
-	GPIO_InitStructure.GPIO_Pin = RED_LED_GPIO | GREEN_LED_GPIO | BLUE_LED_GPIO;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
-	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
-	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
-	GPIO_Init(LED_PORT, &GPIO_InitStructure);
-
 
 	/* Enable peripheral clock for buttons port */
 	RCC_AHB1PeriphClockCmd(BUTTON_PORT_PERIPH, ENABLE);
@@ -74,163 +56,85 @@ void setupGPIO()
 
 }
 
-void setupTimer()
-{
-	//TIM_CLK = 2 * SYSCLK / AHB_PRESC / APB2_PRESC
-	// = 2 * 60Mhz / 1 /2 = 60 Mhz
-
-
-
-	RCC_APB2PeriphClockCmd(TIMER_PERIPH, ENABLE);
-	TIM_TimeBaseInitTypeDef tim_struct;
-
-	tim_struct.TIM_Period = TIMER_APR ;
-	//tim_struct.TIM_Prescaler = 2999;  //20hz
-	//tim_struct.TIM_Prescaler = 1199;  //50hz
-	tim_struct.TIM_Prescaler = 599;  //10hz
-	tim_struct.TIM_CounterMode = TIM_CounterMode_Up;
-
-    tim_struct.TIM_ClockDivision     = TIM_CKD_DIV1;
-    tim_struct.TIM_RepetitionCounter = 0;
-	TIM_TimeBaseInit(TIMER, &tim_struct);
-};
-
-void setupPWM()
-{
-    TIM_OCInitTypeDef tim_oc_init;
-
-    TIM_OCStructInit(&tim_oc_init);
-
-    tim_oc_init.TIM_OCMode      = TIM_OCMode_PWM1;
-    tim_oc_init.TIM_Pulse       = 0;
-    tim_oc_init.TIM_OutputState = TIM_OutputState_Enable;
-    tim_oc_init.TIM_OCPolarity  = TIM_OCPolarity_Low;
-
-
-    TIM_OC1Init(TIMER, &tim_oc_init);
-    TIM_OC2Init(TIMER, &tim_oc_init);
-    TIM_OC3Init(TIMER, &tim_oc_init);
-
-    TIM_OC1PreloadConfig(TIMER, TIM_OCPreload_Enable);
-    TIM_OC2PreloadConfig(TIMER, TIM_OCPreload_Enable);
-    TIM_OC3PreloadConfig(TIMER, TIM_OCPreload_Enable);
-
-    TIM_CtrlPWMOutputs(TIMER, ENABLE);
-
-
-
-};
-
-typedef struct _ButtonState
-{
-	uint32_t switch_counter;
-	uint8_t switched_on;
-	uint8_t triggered;
-
-} ButtonState;
-
-void processButtonState(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin,
-		ButtonState *buttonState)
-{
-	//we use counter to avoid contact chatter
-	int state = GPIO_ReadInputDataBit(GPIOx, GPIO_Pin);
-	if (state == 0)
-	{
-		buttonState->switch_counter++;
-		if (buttonState->switch_counter > SWITCH_COUNTER_DELAY)
-			buttonState->switch_counter = SWITCH_COUNTER_DELAY;
-	}
-	else
-	{
-		if (buttonState->switch_counter > 0)
-			buttonState->switch_counter--;
-	};
-
-	buttonState->triggered = 0;
-	if (!buttonState->switched_on
-			&& buttonState->switch_counter == SWITCH_COUNTER_DELAY)
-	{
-		buttonState->switched_on = 1;
-		buttonState->triggered = 1;
-
-	}
-	else if (buttonState->switched_on && buttonState->switch_counter == 0)
-	{
-		buttonState->switched_on = 0;
-		buttonState->triggered = 1;
-
-	};
-
-}
-;
-
-typedef void (*SetPWMValueFunc) (TIM_TypeDef*,uint32_t);
-
 
 int main(void)
 {
 	EOM eomProgram;
-	eom_init(&eomProgram);
-
-	eom_clkreset(&eomProgram, SYSCLK_FREQ);
-
-
-	setupTimer();
-	setupPWM();
+	eom_init(&eomProgram, SYSCLK_FREQ);
+	
 	setupGPIO();
 
-    TIM_SetCompare1(TIMER, 0);
-    TIM_SetCompare2(TIMER, 0);
-    TIM_SetCompare3(TIMER, 0);
 
-	TIM_Cmd(TIMER, ENABLE);
+	EOMAntiChatter brightnessButtonState;
+	EOMAntiChatter ledButtonState;
 
-
-
-
-	uint32_t oldTimerCounter = 0;
-	ButtonState brightnessButtonState = {0};
-	ButtonState ledButtonState = {0};
+	eom_antichatter_init(&brightnessButtonState, &eomProgram, BUTTON_PORT, BRIGHT_BUTTON_PIN, 30, true);
+	eom_antichatter_init(&ledButtonState, &eomProgram,BUTTON_PORT, SWITCH_BUTTON_PIN, 30, true);
 
 
-	SetPWMValueFunc LEDS_BRIGHTNESS_FUNCS[] = { &TIM_SetCompare1, &TIM_SetCompare2, &TIM_SetCompare3 };
-	const size_t LEDS_BRIGHTNESS_FUNCS_SIZE = sizeof(LEDS_BRIGHTNESS_FUNCS) / sizeof(LEDS_BRIGHTNESS_FUNCS[0]);
 
-	uint16_t PWM_VALUES[BRIGHT_STEPS];
+	uint16_t BRIGHT_VALUES[BRIGHT_STEPS];
 	for (int i = 0; i < BRIGHT_STEPS; i++)
 	{
-		PWM_VALUES[i] = i* (TIMER_APR / BRIGHT_STEPS);
+		BRIGHT_VALUES[i] = i* (MAX_BRIGHTNESS / BRIGHT_STEPS);
 	};
-    int8_t current_brights[] = {0, 0, 0};
+    int8_t current_brights_indexes[] = {0, 0, 0};
 
 	int8_t current_led = 0;
 
+    uint32_t lastTime = eom_monotonic_time(&eomProgram);
 
-	while (1)
+    EOMLedDriver ledDriver;
+    eom_leddriver_init(&ledDriver, &eomProgram, LED_PORT_AUX, RED_PIN_AUX, GREEN_PIN_AUX, BLUE_PIN_AUX, false);
+    uint8_t softwarePWMBrights[] = {0,100, 200};
+
+
+    EOMLedDriver mainLedDriver;
+    eom_leddriver_init(&mainLedDriver, &eomProgram, LED_PORT, RED_LED_GPIO, GREEN_LED_GPIO, BLUE_LED_GPIO, true);
+
+    while (1)
 	{
 
 		int i;
 		/* Switch the LED on */
 
-		processButtonState(BUTTON_PORT, BRIGHT_BUTTON_PIN, &brightnessButtonState);
-		processButtonState(BUTTON_PORT, SWITCH_BUTTON_PIN, &ledButtonState);
-		if (brightnessButtonState.triggered && brightnessButtonState.switched_on)
+		eom_antichatter_process( &brightnessButtonState);
+
+
+		if (brightnessButtonState.triggered && brightnessButtonState.switchedOn)
 		{
-			current_brights[current_led]++;
-			if (current_brights[current_led] == BRIGHT_STEPS)
-				current_brights[current_led] = 0;
-			LEDS_BRIGHTNESS_FUNCS[current_led](TIMER, PWM_VALUES[current_brights[current_led]] );
+			current_brights_indexes[current_led]++;
+			if (current_brights_indexes[current_led] == BRIGHT_STEPS)
+				current_brights_indexes[current_led] = 0;
 
-
+			eom_leddriver_set_color
+			   (&mainLedDriver, BRIGHT_VALUES[current_brights_indexes[0]], BRIGHT_VALUES[current_brights_indexes[1]], BRIGHT_VALUES[current_brights_indexes[2]]);
 		};
-		if (ledButtonState.triggered && ledButtonState.switched_on)
+
+		eom_antichatter_process( &ledButtonState);
+		if (ledButtonState.triggered && ledButtonState.switchedOn)
 		{
 			//LEDS_BRIGHTNESS_FUNCS[current_led](TIMER, 0 );
 			current_led++;
-			if (current_led == LEDS_BRIGHTNESS_FUNCS_SIZE)
+			if (current_led == 3)
 				current_led= 0;
-			LEDS_BRIGHTNESS_FUNCS[current_led](TIMER, PWM_VALUES[current_brights[current_led]] );
 
+			eom_leddriver_set_color
+			   (&mainLedDriver, BRIGHT_VALUES[current_brights_indexes[0]], BRIGHT_VALUES[current_brights_indexes[1]], BRIGHT_VALUES[current_brights_indexes[2]]);
+
+
+
+		};
+
+		uint32_t currentTime = eom_monotonic_time(&eomProgram);
+		if (currentTime >= (lastTime + 50))
+		{
+			for (int i = 0; i<3; i++)
+			{
+				softwarePWMBrights[i]+=1;
+			};
+			eom_leddriver_set_color(&ledDriver,softwarePWMBrights[0], softwarePWMBrights[1], softwarePWMBrights[2]);
+			lastTime = currentTime;
 
 		};
 
