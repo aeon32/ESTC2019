@@ -33,7 +33,12 @@ static void setupGPIO(EOMLedDriver * ledDriver)
    gpioInitStructure.GPIO_OType = GPIO_OType_PP;
    gpioInitStructure.GPIO_Speed = GPIO_Speed_2MHz;
    gpioInitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+
    GPIO_Init(ledDriver->ledPort, &gpioInitStructure);
+   if (ledDriver->inverted)
+	   GPIO_SetBits(ledDriver->ledPort, ledDriver->redLedPin | ledDriver->blueLedPin | ledDriver->greenLedPin);
+   else
+	   GPIO_ResetBits(ledDriver->ledPort, ledDriver->redLedPin | ledDriver->blueLedPin | ledDriver->greenLedPin);
 
 
 };

@@ -1,4 +1,5 @@
 #include "eom_softwaretimer.h"
+#include "eom.h"
 #include <stm32f4xx.h>
 
 void eom_software_timer_add(EOMSoftwareTimer * softwareTimer,EOM * program,

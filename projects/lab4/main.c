@@ -91,11 +91,10 @@ int main(void)
 
     EOMLedDriver mainLedDriver;
     eom_leddriver_init(&mainLedDriver, &eomProgram, LED_PORT, RED_LED_GPIO, GREEN_LED_GPIO, BLUE_LED_GPIO, true);
+    eom_leddriver_set_color(&mainLedDriver,1, 1, 1);
 
     while (1)
 	{
-
-		int i;
 		/* Switch the LED on */
 
 		eom_antichatter_process( &brightnessButtonState);

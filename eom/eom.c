@@ -5,7 +5,7 @@
 
 #include <stm32f4xx.h>
 
-volatile EOM * programGlobal = 0;
+EOM * programGlobal = 0;
 
 static void configure_pll(unsigned int freq)
 {
@@ -126,7 +126,7 @@ void eom_init(EOM * program, uint8_t freq)
    SysTick_Config(ticks);
 };
 
-EOM * eom_get_program()
+EOM * eom_get_program(void)
 {
 	return programGlobal;
 };

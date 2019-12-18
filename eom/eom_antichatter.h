@@ -28,7 +28,7 @@ typedef struct _EOMAntiChatter
 	uint16_t buttonPin;
 	uint16_t hysterTime;
 	bool inverted;
-	uint32_t lastTime
+	uint32_t lastTime;
 
 } EOMAntiChatter;
 

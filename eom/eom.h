@@ -25,7 +25,7 @@ typedef struct _EOM
 	uint8_t freq;
 	uint32_t timeCounter;
     EOMSoftwareTimer * timerListHead;
-    volatile int timerListsLocked;
+    int timerListsLocked;
 
 } EOM;
 
@@ -43,7 +43,7 @@ void eom_init(EOM * program, uint8_t freq);
   * @brief  Returns value of EOM struct global instance
   * @retval Global instance of EOM struct
  **/
-EOM * eom_get_program();
+EOM * eom_get_program(void);
 
 /**
   * @brief  Lock mutex for timers list.
@@ -57,7 +57,7 @@ void eom_timers_lock(EOM * program);
   * @brief  Unlock mutex for timers list
   * @retval None
  **/
-void eom_timers_lock(EOM * program);
+void eom_timers_unlock(EOM * program);
 
 #ifdef __cplusplus
 }
